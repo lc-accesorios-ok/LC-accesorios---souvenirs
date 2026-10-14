@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo Exclusivo de Souvenirs 💕</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rosa-fondo: #fff0f3;
+      --rosa-card: #ffffff;
+      --rosa-primario: #ff758c;
+      --rosa-oscuro: #d81159;
+      --rosa-suave: #ffb3c1;
+      --gris-texto: #4a4a4a;
+      --sombra: 0 10px 25px rgba(255, 117, 140, 0.12);
+    }
+
+    * { box-sizing: border-box; font-family: 'Poppins', sans-serif; margin: 0; padding: 0; }
+    body { background-color: var(--rosa-fondo); color: var(--gris-texto); padding: 20px 10px; }
+    
+    header { text-align: center; margin-bottom: 25px; }
+    header h1 { color: var(--rosa-oscuro); font-size: 2rem; }
+    header p { color: #888; font-size: 0.95rem; }
+
+    .filters { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 25px; }
+    .filter-btn {
+      padding: 8px 18px; border: 1.5px solid var(--rosa-suave); border-radius: 20px;
+      background: white; color: var(--rosa-oscuro); font-weight: 500; cursor: pointer; transition: 0.3s;
+    }
+    .filter-btn.active, .filter-btn:hover { background: var(--rosa-primario); color: white; border-color: var(--rosa-primario); }
+
+    .grid-catalog {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px; max-width: 1100px; margin: 0 auto;
+    }
+
+    .card {
+      background: white; border-radius: 16px; overflow: hidden; box-shadow: var(--sombra);
+      display: flex; flex-direction: column; transition: transform 0.3s;
+    }
+    .card:hover { transform: translateY(-5px); }
+    .card-img { width: 100%; height: 180px; object-fit: cover; background: #ffe6ea; }
+    .card-body { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
+    .card-cat { font-size: 0.75rem; color: var(--rosa-primario); font-weight: 600; text-transform: uppercase; }
+    .card-title { font-size: 1.1rem; color: #333; margin: 4px 0 10px; font-weight: 600; }
+
+    .price-tag { background: #fff5f7; padding: 8px; border-radius: 8px; margin-bottom: 15px; font-size: 0.8rem; }
+    .price-tag span { font-weight: 600; color: var(--rosa-oscuro); }
+
+    .btn-quote {
+      margin-top: auto; padding: 10px; border: none; border-radius: 10px;
+      background: var(--rosa-primario); color: white; font-weight: 600; cursor: pointer;
+      transition: 0.3s; text-align: center;
+    }
+    .btn-quote:hover { background: var(--rosa-oscuro); }
+
+    /* MODAL COTIZADOR */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 100;
+    }
+    .modal {
+      background: white; padding: 25px; border-radius: 20px; width: 90%; max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; animation: pop 0.3s ease-out;
+    }
+    @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .close-modal { position: absolute; top: 15px; right: 18px; font-size: 1.4rem; cursor: pointer; color: #aaa; }
+    .modal h3 { color: var(--rosa-oscuro); margin-bottom: 15px; }
+
+    .calc-box { background: #fff0f3; padding: 12px; border-radius: 12px; margin: 15px 0; font-size: 0.9rem; }
+    .calc-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .calc-total { font-weight: 700; font-size: 1.1rem; color: var(--rosa-oscuro); border-top: 1px solid var(--rosa-suave); padding-top: 5px; }
+
+    .btn-wsp {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: #25d366; color: white; font-weight: 600; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🌸 Catálogo de Souvenirs</h1>
+    <p>Elegí tu modelo favorito y cotizá tu pedido al instante</p>
+  </header>
+
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterCat('Todos')">Todos</button>
+    <button class="filter-btn" onclick="filterCat('Denarios')">Denarios</button>
+    <button class="filter-btn" onclick="filterCat('Llaveros')">Llaveros</button>
+    <button class="filter-btn" onclick="filterCat('Señaladores')">Señaladores</button>
+    <button class="filter-btn" onclick="filterCat('Rosarios')">Rosarios</button>
+  </div>
+
+  <div class="grid-catalog" id="catalog-container"></div>
+
+  <!-- MODAL DE COTIZACIÓN -->
+  <div class="modal-overlay" id="modal-cotizador">
+    <div class="modal">
+      <span class="close-modal" onclick="closeModal()">&times;</span>
+      <h3 id="modal-title">Cotizar Souvenir</h3>
+
+      <label style="font-size: 0.85rem; font-weight: 500;">Cantidad de souvenirs:</label>
+      <input type="number" id="cant-input" value="30" min="1" style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid var(--rosa-suave); margin-bottom: 12px;">
+
+      <label style="font-size: 0.85rem; font-weight: 500;">Fecha aproximada del evento:</label>
+      <input type="date" id="fecha-input" style="width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid var(--rosa-suave); margin-bottom: 15px;">
+
+      <div class="calc-box">
+        <div class="calc-row"><span>Precio unitario aplicable:</span> <b id="calc-unit">$0</b></div>
+        <div class="calc-row calc-total"><span>Total estimado:</span> <span id="calc-total">$0</span></div>
+      </div>
+
+      <a id="wsp-link" target="_blank" class="btn-wsp">💬 Enviar Pedido por WhatsApp</a>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_PRODUCTS = [
+      { id: '1', nombre: 'Denario Perlado Rosa', categoria: 'Denarios', imagen: 'https://images.unsplash.com/photo-1590736704728-f4730bb30770?w=400', unit: 1500, p30: 1200, p60: 1000, p90: 850 },
+      { id: '2', nombre: 'Llavero Angelito Dije', categoria: 'Llaveros', imagen: 'https://images.unsplash.com/photo-1611591475285-a36ad5e14391?w=400', unit: 1800, p30: 1450, p60: 1250, p90: 1050 },
+      { id: '3', nombre: 'Señalador Borla & Cruz', categoria: 'Señaladores', imagen: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400', unit: 1300, p30: 1050, p60: 900, p90: 750 },
+      { id: '4', nombre: 'Rosario Madera Pastel', categoria: 'Rosarios', imagen: 'https://images.unsplash.com/photo-1601370690183-1c7796ecec61?w=400', unit: 2200, p30: 1800, p60: 1550, p90: 1300 }
+    ];
+
+    const productos = JSON.parse(localStorage.getItem('souvenirs_db')) || DEFAULT_PRODUCTS;
+    let selectedProduct = null;
+
+    function renderCatalog(cat = 'Todos') {
+      const container = document.getElementById('catalog-container');
+      container.innerHTML = '';
+      
+      const filtered = cat === 'Todos' ? productos : productos.filter(p => p.categoria === cat);
+
+      filtered.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <img src="${p.imagen}" class="card-img" alt="${p.nombre}">
+          <div class="card-body">
+            <span class="card-cat">${p.categoria}</span>
+            <h3 class="card-title">${p.nombre}</h3>
+            <div class="price-tag">
+              • 30 a 59u: <span>$${p.p30}</span> c/u<br>
+              • 60 a 89u: <span>$${p.p60}</span> c/u<br>
+              • 90+ unidades: <span>$${p.p90}</span> c/u
+            </div>
+            <button class="btn-quote" onclick="openCotizador('${p.id}')">✨ Cotizar Mi Pedido</button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterCat(cat) {
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      renderCatalog(cat);
+    }
+
+    function openCotizador(id) {
+      selectedProduct = productos.find(p => p.id === id);
+      document.getElementById('modal-title').innerText = selectedProduct.nombre;
+      document.getElementById('modal-cotizador').style.display = 'flex';
+      calculate();
+    }
+
+    function closeModal() {
+      document.getElementById('modal-cotizador').style.display = 'none';
+    }
+
+    function calculate() {
+      if (!selectedProduct) return;
+      const cant = parseInt(document.getElementById('cant-input').value) || 1;
+      const fecha = document.getElementById('fecha-input').value;
+      
+      let unitPrice = selectedProduct.unit;
+      if (cant >= 90) unitPrice = selectedProduct.p90;
+      else if (cant >= 60) unitPrice = selectedProduct.p60;
+      else if (cant >= 30) unitPrice = selectedProduct.p30;
+
+      const total = cant * unitPrice;
+
+      document.getElementById('calc-unit').innerText = `$${unitPrice}`;
+      document.getElementById('calc-total').innerText = `$${total.toLocaleString('es-AR')}`;
+
+      // Configurar link de WhatsApp
+      const msg = `Hola! 💕 Quisiera encargar *${cant} unidades* de *${selectedProduct.nombre}*.\n` +
+                  `• Precio unitario aplicable: $${unitPrice}\n` +
+                  `• Total cotizado: $${total.toLocaleString('es-AR')}\n` +
+                  (fecha ? `• Fecha deseada de entrega: ${fecha}\n` : '') +
+                  `¿Cómo podemos coordinar? ✨`;
+
+      const numWsp = '5491112345678'; // Reemplazar por tu celular
+      document.getElementById('wsp-link').href = `https://wa.me/${numWsp}?text=${encodeURIComponent(msg)}`;
+    }
+
+    document.getElementById('cant-input').addEventListener('input', calculate);
+    document.getElementById('fecha-input').addEventListener('change', calculate);
+
+    renderCatalog();
+  </script>
+</body>
+</html>
