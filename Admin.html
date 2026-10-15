@@ -92,9 +92,8 @@
         </div>
 
         <div class="form-group">
-          <label>Imagen (URL o archivo local)</label>
-          <input type="text" id="imagen-url" placeholder="Pegá el link de la foto o elegí archivo abajo">
-          <input type="file" id="imagen-file" accept="image/*" style="margin-top: 5px;">
+          <label>Imagen (Link URL de la foto)</label>
+          <input type="text" id="imagen-url" placeholder="Ej: https://... o link de imagen de Pinterest/Instagram">
         </div>
 
         <div class="grid-precios">
@@ -144,19 +143,6 @@
     const form = document.getElementById('product-form');
     const container = document.getElementById('productos-container');
 
-    // Muestra de imagen en base64 cuando suben un archivo
-    let imageBase64 = '';
-    document.getElementById('imagen-file').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          imageBase64 = evt.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
     function renderProductos() {
       container.innerHTML = '';
       productos.forEach(p => {
@@ -185,7 +171,7 @@
       e.preventDefault();
       const id = document.getElementById('prod-id').value;
       const urlInput = document.getElementById('imagen-url').value;
-      const finalImg = imageBase64 || urlInput || 'https://via.placeholder.com/200x130/ffe0e6/ff758c?text=Souvenir';
+      const finalImg = urlInput || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=400';
 
       const newProd = {
         id: id || Date.now().toString(),
@@ -207,6 +193,7 @@
       localStorage.setItem('souvenirs_db', JSON.stringify(productos));
       resetForm();
       renderProductos();
+      alert('¡Souvenir guardado con éxito! ✨');
     });
 
     function editProduct(id) {
@@ -215,7 +202,7 @@
       document.getElementById('prod-id').value = p.id;
       document.getElementById('nombre').value = p.nombre;
       document.getElementById('categoria').value = p.categoria;
-      document.getElementById('imagen-url').value = p.imagen.startsWith('data:') ? '' : p.imagen;
+      document.getElementById('imagen-url').value = p.imagen;
       document.getElementById('precio-u').value = p.unit;
       document.getElementById('precio-30').value = p.p30;
       document.getElementById('precio-60').value = p.p60;
@@ -236,7 +223,6 @@
 
     function resetForm() {
       form.reset();
-      imageBase64 = '';
       document.getElementById('prod-id').value = '';
       document.getElementById('form-title').innerText = '✨ Cargar Nuevo Souvenir';
       document.getElementById('btn-save').innerText = '💾 Guardar Souvenir';
