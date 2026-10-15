@@ -67,4 +67,232 @@
     .precios-preview { font-size: 0.75rem; margin-top: 8px; color: #666; border-top: 1px dashed #ffd1dc; padding-top: 6px; }
 
     .actions { display: flex; gap: 6px; margin-top: 10px; }
-    .btn-sm { padding: 6px; font-size: 0
+    .btn-sm { padding: 6px; font-size: 0.75rem; border-radius: 6px; border: none; cursor: pointer; flex: 1; font-weight: 600; }
+    .btn-edit { background: #ffe082; color: #5d4037; }
+    .btn-delete { background: #ff8a80; color: white; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>👑 Panel Admin Souvenirs</h1>
+    <p>Subí tus fotos directo desde el celu y gestioná tu catálogo</p>
+  </header>
+
+  <div class="layout">
+    <!-- FORMULARIO -->
+    <div class="card">
+      <h2 id="form-title">✨ Cargar Nuevo Souvenir</h2>
+      <form id="product-form">
+        <input type="hidden" id="prod-id">
+
+        <div class="form-group">
+          <label>Nombre del Souvenir</label>
+          <input type="text" id="nombre" placeholder="Ej: Denario Perlado con Cruz" required>
+        </div>
+
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="categoria" required>
+            <option value="Denarios">Denarios</option>
+            <option value="Llaveros">Llaveros</option>
+            <option value="Señaladores">Señaladores</option>
+            <option value="Rosarios">Rosarios</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Seleccionar Fotos (Podés elegir varias de tu galería a la vez)</label>
+          <input type="file" id="imagenes-file" accept="image/*" multiple style="border: none; padding: 5px 0;">
+          <small style="color: #888; font-size: 0.75rem;">Si no elegís nuevas fotos al editar, se mantendrán las anteriores.</small>
+        </div>
+
+        <div class="grid-precios">
+          <div class="form-group">
+            <label>Precio Unitario (1-29u)</label>
+            <input type="number" id="precio-u" placeholder="$" required>
+          </div>
+          <div class="form-group">
+            <label>Precio (30 a 59u)</label>
+            <input type="number" id="precio-30" placeholder="$" required>
+          </div>
+          <div class="form-group">
+            <label>Precio (60 a 89u)</label>
+            <input type="number" id="precio-60" placeholder="$" required>
+          </div>
+          <div class="form-group">
+            <label>Precio (90+ u)</label>
+            <input type="number" id="precio-90" placeholder="$" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="btn-save">💾 Guardar Souvenir</button>
+        <button type="button" class="btn btn-secondary" id="btn-cancel" onclick="resetForm()">Cancelar Edición</button>
+      </form>
+    </div>
+
+    <!-- LISTADO / VISTA PREVIA -->
+    <div class="card">
+      <h2>🛍️ Souvenirs Activos</h2>
+      <div class="productos-list" id="productos-container"></div>
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_PRODUCTS = [
+      { id: '1', nombre: 'Denario Perlado Rosa', categoria: 'Denarios', imagenes: ['https://images.unsplash.com/photo-1590736704728-f4730bb30770?w=400'], unit: 1500, p30: 1200, p60: 1000, p90: 850 },
+      { id: '2', nombre: 'Llavero Angelito Dije', categoria: 'Llaveros', imagenes: ['https://images.unsplash.com/photo-1611591475285-a36ad5e14391?w=400'], unit: 1800, p30: 1450, p60: 1250, p90: 1050 }
+    ];
+
+    let productos = JSON.parse(localStorage.getItem('souvenirs_db')) || DEFAULT_PRODUCTS;
+    let tempImages = [];
+
+    // Capturar múltiples archivos del celu o PC
+    document.getElementById('imagenes-file').addEventListener('change', function(e) {
+      const files = e.target.files;
+      tempImages = [];
+      if (files.length > 0) {
+        let processed = 0;
+        for (let i = 0; i < files.length; i++) {
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            tempImages.push(evt.target.result);
+            processed++;
+            if (processed === files.length) {
+              // Carga completa de imágenes temporales
+            }
+          };
+          reader.readAsDataURL(files[i]);
+        }
+      }
+    });
+
+    const form = document.getElementById('product-form');
+    const container = document.getElementById('productos-container');
+
+    function renderProductos() {
+      container.innerHTML = '';
+      productos.forEach((p, pIndex) => {
+        const imgs = p.imagenes && p.imagenes.length > 0 ? p.imagenes : ['https://via.placeholder.com/200x130/ffe0e6/ff758c?text=Sin+Foto'];
+        
+        const div = document.createElement('div');
+        div.className = 'producto-item';
+        
+        let carouselHtml = `<div class="carousel-container" id="carousel-${pIndex}">`;
+        imgs.forEach((img, imgIndex) => {
+          carouselHtml += `<img src="${img}" class="carousel-slide ${imgIndex === 0 ? 'active' : ''}">`;
+        });
+        if(imgs.length > 1) {
+          carouselHtml += `
+            <button class="carousel-btn carousel-prev" onclick="moveSlide(${pIndex}, -1)">❮</button>
+            <button class="carousel-btn carousel-next" onclick="moveSlide(${pIndex}, 1)">❯</button>
+          `;
+        }
+        carouselHtml += `</div>`;
+
+        div.innerHTML = `
+          ${carouselHtml}
+          <div class="producto-info">
+            <span class="badge">${p.categoria}</span>
+            <h4>${p.nombre}</h4>
+            <div class="precios-preview">
+              <b>1u:</b> $${p.unit} | <b>30u+:</b> $${p.p30}<br>
+              <b>60u+:</b> $${p.p60} | <b>90u+:</b> $${p.p90}
+            </div>
+            <div class="actions">
+              <button class="btn-sm btn-edit" onclick="editProduct('${p.id}')">✏️ Editar</button>
+              <button class="btn-sm btn-delete" onclick="deleteProduct('${p.id}')">🗑️ Borrar</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Funcionalidad de carrusel en admin
+    window.moveSlide = function(pIndex, direction) {
+      const carousel = document.getElementById(`carousel-${pIndex}`);
+      const slides = carousel.querySelectorAll('.carousel-slide');
+      let activeIndex = Array.from(slides].findIndex(s => s.classList.contains('active'));
+      slides[activeIndex].classList.remove('active');
+      activeIndex = (activeIndex + direction + slides.length) % slides.length;
+      slides[activeIndex].classList.add('active');
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('prod-id').value;
+      
+      let finalImages = tempImages;
+      if (id && finalImages.length === 0) {
+        // Si está editando y no seleccionó nuevas fotos, mantiene las viejas
+        const existing = productos.find(p => p.id === id);
+        finalImages = existing ? existing.imagenes : [];
+      }
+
+      if (finalImages.length === 0) {
+        finalImages = ['https://via.placeholder.com/400x300/ffe0e6/ff758c?text=Souvenir'];
+      }
+
+      const newProd = {
+        id: id || Date.now().toString(),
+        nombre: document.getElementById('nombre').value,
+        categoria: document.getElementById('categoria').value,
+        imagenes: finalImages,
+        unit: Number(document.getElementById('precio-u').value),
+        p30: Number(document.getElementById('precio-30').value),
+        p60: Number(document.getElementById('precio-60').value),
+        p90: Number(document.getElementById('precio-90').value)
+      };
+
+      if (id) {
+        productos = productos.map(p => p.id === id ? newProd : p);
+      } else {
+        productos.push(newProd);
+      }
+
+      localStorage.setItem('souvenirs_db', JSON.stringify(productos));
+      resetForm();
+      renderProductos();
+      alert('¡Souvenir guardado con éxito! ✨');
+    });
+
+    function editProduct(id) {
+      const p = productos.find(prod => prod.id === id);
+      if (!p) return;
+      document.getElementById('prod-id').value = p.id;
+      document.getElementById('nombre').value = p.nombre;
+      document.getElementById('categoria').value = p.categoria;
+      tempImages = [];
+
+      document.getElementById('precio-u').value = p.unit;
+      document.getElementById('precio-30').value = p.p30;
+      document.getElementById('precio-60').value = p.p60;
+      document.getElementById('precio-90').value = p.p90;
+
+      document.getElementById('form-title').innerText = '✏️ Editar Souvenir';
+      document.getElementById('btn-save').innerText = '🔄 Actualizar Souvenir';
+      document.getElementById('btn-cancel').style.display = 'block';
+    }
+
+    function deleteProduct(id) {
+      if (confirm('¿Segura que querés borrar este souvenir?')) {
+        productos = productos.filter(p => p.id !== id);
+        localStorage.setItem('souvenirs_db', JSON.stringify(productos));
+        renderProductos();
+      }
+    }
+
+    function resetForm() {
+      form.reset();
+      tempImages = [];
+      document.getElementById('prod-id').value = '';
+      document.getElementById('form-title').innerText = '✨ Cargar Nuevo Souvenir';
+      document.getElementById('btn-save').innerText = '💾 Guardar Souvenir';
+      document.getElementById('btn-cancel').style.display = 'none';
+    }
+
+    renderProductos();
+  </script>
+</body>
+</html>
