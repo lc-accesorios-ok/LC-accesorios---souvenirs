@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catálogo Exclusivo de Souvenirs 💕</title>
+  <title>Catálogo de Souvenirs LC accesorios 💕</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -40,7 +40,18 @@
       display: flex; flex-direction: column; transition: transform 0.3s;
     }
     .card:hover { transform: translateY(-5px); }
-    .card-img { width: 100%; height: 180px; object-fit: cover; background: #ffe6ea; }
+
+    /* CARRUSEL CLIENTA */
+    .card-carousel { position: relative; width: 100%; height: 200px; background: #ffe6ea; overflow: hidden; }
+    .card-slide { display: none; width: 100%; height: 100%; object-fit: cover; }
+    .card-slide.active { display: block; }
+    .card-btn {
+      position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.7); color: var(--rosa-oscuro);
+      border: none; cursor: pointer; padding: 6px 10px; font-size: 0.8rem; border-radius: 50%; font-weight: bold;
+    }
+    .card-prev { left: 8px; }
+    .card-next { right: 8px; }
+
     .card-body { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
     .card-cat { font-size: 0.75rem; color: var(--rosa-primario); font-weight: 600; text-transform: uppercase; }
     .card-title { font-size: 1.1rem; color: #333; margin: 4px 0 10px; font-weight: 600; }
@@ -84,7 +95,7 @@
 
   <header>
     <h1>🌸 Catálogo de Souvenirs</h1>
-    <p>Elegí tu modelo favorito y cotizá tu pedido al instante</p>
+    <p>Elegí tu modelo favorito, desliza las fotos y cotizá tu pedido</p>
   </header>
 
   <div class="filters">
@@ -120,10 +131,8 @@
 
   <script>
     const DEFAULT_PRODUCTS = [
-      { id: '1', nombre: 'Denario Perlado Rosa', categoria: 'Denarios', imagen: 'https://images.unsplash.com/photo-1590736704728-f4730bb30770?w=400', unit: 1500, p30: 1200, p60: 1000, p90: 850 },
-      { id: '2', nombre: 'Llavero Angelito Dije', categoria: 'Llaveros', imagen: 'https://images.unsplash.com/photo-1611591475285-a36ad5e14391?w=400', unit: 1800, p30: 1450, p60: 1250, p90: 1050 },
-      { id: '3', nombre: 'Señalador Borla & Cruz', categoria: 'Señaladores', imagen: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400', unit: 1300, p30: 1050, p60: 900, p90: 750 },
-      { id: '4', nombre: 'Rosario Madera Pastel', categoria: 'Rosarios', imagen: 'https://images.unsplash.com/photo-1601370690183-1c7796ecec61?w=400', unit: 2200, p30: 1800, p60: 1550, p90: 1300 }
+      { id: '1', nombre: 'Denario Perlado Rosa', categoria: 'Denarios', imagenes: ['https://images.unsplash.com/photo-1590736704728-f4730bb30770?w=400'], unit: 1500, p30: 1200, p60: 1000, p90: 850 },
+      { id: '2', nombre: 'Llavero Angelito Dije', categoria: 'Llaveros', imagenes: ['https://images.unsplash.com/photo-1611591475285-a36ad5e14391?w=400'], unit: 1800, p30: 1450, p60: 1250, p90: 1050 }
     ];
 
     const productos = JSON.parse(localStorage.getItem('souvenirs_db')) || DEFAULT_PRODUCTS;
@@ -135,11 +144,25 @@
       
       const filtered = cat === 'Todos' ? productos : productos.filter(p => p.categoria === cat);
 
-      filtered.forEach(p => {
+      filtered.forEach((p, pIndex) => {
+        const imgs = p.imagenes && p.imagenes.length > 0 ? p.imagenes : ['https://via.placeholder.com/400x300/ffe0e6/ff758c?text=Souvenir'];
+        
+        let carouselHtml = `<div class="card-carousel" id="client-carousel-${pIndex}">`;
+        imgs.forEach((img, imgIndex) => {
+          carouselHtml += `<img src="${img}" class="card-slide ${imgIndex === 0 ? 'active' : ''}">`;
+        });
+        if(imgs.length > 1) {
+          carouselHtml += `
+            <button class="card-btn card-prev" onclick="moveClientSlide(${pIndex}, -1)">❮</button>
+            <button class="card-btn card-next" onclick="moveClientSlide(${pIndex}, 1)">❯</button>
+          `;
+        }
+        carouselHtml += `</div>`;
+
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
-          <img src="${p.imagen}" class="card-img" alt="${p.nombre}">
+          ${carouselHtml}
           <div class="card-body">
             <span class="card-cat">${p.categoria}</span>
             <h3 class="card-title">${p.nombre}</h3>
@@ -153,6 +176,15 @@
         `;
         container.appendChild(card);
       });
+    }
+
+    window.moveClientSlide = function(pIndex, direction) {
+      const carousel = document.getElementById(`client-carousel-${pIndex}`);
+      const slides = carousel.querySelectorAll('.card-slide');
+      let activeIndex = Array.from(slides).findIndex(s => s.classList.contains('active'));
+      slides[activeIndex].classList.remove('active');
+      activeIndex = (activeIndex + direction + slides.length) % slides.length;
+      slides[activeIndex].classList.add('active');
     }
 
     function filterCat(cat) {
@@ -187,14 +219,13 @@
       document.getElementById('calc-unit').innerText = `$${unitPrice}`;
       document.getElementById('calc-total').innerText = `$${total.toLocaleString('es-AR')}`;
 
-      // Configurar link de WhatsApp
       const msg = `Hola! 💕 Quisiera encargar *${cant} unidades* de *${selectedProduct.nombre}*.\n` +
-                  `• Precio unitario aplicable: $${unitPrice}\n` +
-                  `• Total cotizado: $${total.toLocaleString('es-AR')}\n` +
-                  (fecha ? `• Fecha deseada de entrega: ${fecha}\n` : '') +
+                  `• Precio unitario: $${unitPrice}\n` +
+                  `• Total estimado: $${total.toLocaleString('es-AR')}\n` +
+                  (fecha ? `• Fecha deseada: ${fecha}\n` : '') +
                   `¿Cómo podemos coordinar? ✨`;
 
-      const numWsp = '5493512099695'; // Reemplazar por tu celular
+      const numWsp = '5491112345678'; // Reemplazar con tu número de WhatsApp
       document.getElementById('wsp-link').href = `https://wa.me/${numWsp}?text=${encodeURIComponent(msg)}`;
     }
 
